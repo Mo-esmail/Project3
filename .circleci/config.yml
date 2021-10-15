@@ -18,11 +18,11 @@ commands:
           name: Destroy environments
           when: on_fail
           command: |
-            aws s3 rm --recursive s3://udapeople-<< pipeline.parameters.workflow-id >>
+            aws s3 rm --recursive s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7}
             aws cloudformation delete-stack \
-              --stack-name "udapeople-backend-<< pipeline.parameters.workflow-id >>"
+              --stack-name "udapeople-backend-<< pipeline.parameters.${CIRCLE_WORKFLOW_ID:0:7} >>"
             aws cloudformation delete-stack \
-              --stack-name "udapeople-frontend-<< pipeline.parameters.workflow-id >>"
+              --stack-name "udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:7}"
 
 
   revert-migrations:
@@ -140,16 +140,16 @@ jobs:
           command: |
             aws cloudformation deploy \
               --template-file .circleci/files/backend.yml \
-              --stack-name "udapeople-backend-<< pipeline.parameters.workflow-id >>" \
-              --parameter-overrides ID="<< pipeline.parameters.workflow-id >>" \
+              --stack-name "udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}" \
+              --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}" \
               --tags project=udapeople
       - run:
           name: Ensure front-end infrastructure exist
           command: |
             aws cloudformation deploy \
               --template-file .circleci/files/frontend.yml \
-              --stack-name "udapeople-frontend-<< pipeline.parameters.workflow-id >>" \
-              --parameter-overrides ID="<< pipeline.parameters.workflow-id >>" \
+              --stack-name "udapeople-frontend-${CIRCLE_WORKFLOW_ID:0:7}" \
+              --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}" \
               --tags project=udapeople
       - run:
           name: Add back-end ip to ansible inventory
@@ -282,7 +282,7 @@ jobs:
       - run:
           name: Deploy frontend objects
           command: |
-            aws s3 cp --recursive frontend/dist "s3://udapeople-<< pipeline.parameters.workflow-id >>"
+            aws s3 cp --recursive frontend/dist "s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7}"
       - revert-migrations
       - destroy-environment
 
@@ -348,7 +348,7 @@ jobs:
       - run:
           name: Frontend smoke test.
           command: |
-            URL="http://udapeople-<< pipeline.parameters.workflow-id >>.s3-website-eu-west-3.amazonaws.com"
+            URL="http://udapeople-${CIRCLE_WORKFLOW_ID:0:7}.s3-website-eu-west-3.amazonaws.com"
             echo $URL
 
             if curl -s ${URL} | grep "Welcome"
@@ -394,7 +394,7 @@ jobs:
             aws cloudformation deploy \
               --template-file .circleci/files/cloudfront.yml \
               --stack-name "udapeople-cloudfront" \
-              --parameter-overrides WorkflowID="<< pipeline.parameters.workflow-id >>" \
+              --parameter-overrides WorkflowID="${CIRCLE_WORKFLOW_ID:0:7}" \
               --tags project=udapeople
       - revert-migrations
       - destroy-environment
@@ -411,7 +411,7 @@ jobs:
             export OldWorkflowID=$(curl -H "token: << pipeline.parameters.memstash-token >>" --request GET https://api.memstash.io/values/old_workflow_id_${CIRCLE_WORKFLOW_ID})
             echo "Old Workflow ID: ${OldWorkflowID}"
 
-            if [ "${OldWorkflowID}" != "<< pipeline.parameters.workflow-id >>" ]
+            if [ "${OldWorkflowID}" != "${CIRCLE_WORKFLOW_ID:0:7}" ]
             then
               aws s3 rm "s3://udapeople-${OldWorkflowID}" --recursive
               aws cloudformation delete-stack --stack-name "udapeople-backend-${OldWorkflowID}"
